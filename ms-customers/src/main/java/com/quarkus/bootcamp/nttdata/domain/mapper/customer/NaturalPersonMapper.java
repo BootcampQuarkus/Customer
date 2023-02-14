@@ -32,6 +32,7 @@ public class NaturalPersonMapper implements IMapper<NaturalPerson, NaturalPerson
   @Override
   public NaturalPerson toEntity(NaturalPersonD naturalPersonD) throws NullPointerException {
     NaturalPerson naturalPerson = new NaturalPerson();
+    naturalPerson.setId(naturalPersonD.id);
     naturalPerson.setName(naturalPersonD.getName());
     naturalPerson.setLastName(naturalPersonD.getLastName());
     naturalPerson.setDocumentId(naturalPersonD.getDocumentD().id);

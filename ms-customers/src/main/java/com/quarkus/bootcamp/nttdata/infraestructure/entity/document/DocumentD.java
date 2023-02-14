@@ -20,7 +20,7 @@ public class DocumentD extends PanacheEntity {
    * Tipo de documento que pertenece.
    */
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "documentId")
+  @JoinColumn(name = "documentTypeId")
   protected DocumentTypeD documentTypeD;
   @OneToOne(mappedBy = "documentD", fetch = FetchType.LAZY)
   protected NaturalPersonD naturalPersonD;

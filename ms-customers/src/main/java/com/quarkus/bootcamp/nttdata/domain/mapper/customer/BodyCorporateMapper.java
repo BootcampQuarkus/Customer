@@ -31,6 +31,7 @@ public class BodyCorporateMapper implements IMapper<BodyCorporate, BodyCorporate
   @Override
   public BodyCorporate toEntity(BodyCorporateD bodyCorporateD) throws NullPointerException {
     BodyCorporate bodyCorporate = new BodyCorporate();
+    bodyCorporate.setId(bodyCorporateD.id);
     bodyCorporate.setName(bodyCorporateD.getName());
     bodyCorporate.setDocumentId(bodyCorporateD.getDocumentD().id);
     bodyCorporate.setAddressId(bodyCorporateD.getAddressD().id);
