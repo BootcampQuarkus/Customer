@@ -1,5 +1,7 @@
 package com.quarkus.bootcamp.nttdata.application.address;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.CityNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.entity.address.City;
 import com.quarkus.bootcamp.nttdata.domain.services.address.CityService;
 import jakarta.inject.Inject;
@@ -23,26 +25,42 @@ public class CityResource {
   @GET
   @Path("/{id}")
   public Response getById(@PathParam("id") Long id) {
-    return Response.ok(service.getById(id)).build();
+    try {
+      return Response.ok(service.getById(id)).build();
+    } catch (CityNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @POST
   @Transactional
   public Response create(City city) {
-    return Response.ok(service.create(city)).status(201).build();
+    try {
+      return Response.ok(service.create(city)).status(201).build();
+    } catch (StateNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @PUT
   @Path("{id}")
   @Transactional
   public Response update(@PathParam("id") Long id, City city) {
-    return Response.ok(service.update(id, city)).status(201).build();
+    try {
+      return Response.ok(service.update(id, city)).status(201).build();
+    } catch (CityNotFoundException | StateNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @DELETE
   @Path("{id}")
   @Transactional
   public Response delete(@PathParam("id") Long id) {
-    return Response.ok(service.delete(id)).build();
+    try {
+      return Response.ok(service.delete(id)).build();
+    } catch (CityNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 }

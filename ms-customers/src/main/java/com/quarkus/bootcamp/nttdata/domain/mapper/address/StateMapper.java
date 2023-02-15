@@ -5,31 +5,36 @@ import com.quarkus.bootcamp.nttdata.domain.interfaces.IMapper;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.StateD;
 import jakarta.enterprise.context.ApplicationScoped;
 
+/**
+ * Clase para transformaciones entre State y StateD
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class StateMapper implements IMapper<State, StateD> {
   /**
-   * Transforma el objeto de CardType a CardTypeD.
+   * Transforma el objeto de State a StateD.
    *
-   * @param state Objeto de la clase CardType que se desea transformar.
-   * @return Objeto de la clase CardTypeD.
+   * @param state Objeto de la clase State que se desea transformar.
+   * @return Objeto de la clase StateD.
    * @throws NullPointerException
    */
   @Override
-  public StateD toDto(State state) throws NullPointerException {
+  public StateD toEntity(State state) throws NullPointerException {
     StateD stateD = new StateD();
     stateD.setName(state.getName());
     return stateD;
   }
 
   /**
-   * Transforma el objeto de CardTypeD a CardType.
+   * Transforma el objeto de StateD a State.
    *
-   * @param stateD Objeto de la clase CardTypeD que se desea transformar.
-   * @return Objeto de la clase CardType.
+   * @param stateD Objeto de la clase StateD que se desea transformar.
+   * @return Objeto de la clase State.
    * @throws NullPointerException
    */
   @Override
-  public State toEntity(StateD stateD) throws NullPointerException {
+  public State toDto(StateD stateD) throws NullPointerException {
     State state = new State();
     state.setId(stateD.id);
     state.setName(stateD.getName());

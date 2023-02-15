@@ -1,5 +1,6 @@
 package com.quarkus.bootcamp.nttdata.domain.services.address;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.entity.address.State;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
 import com.quarkus.bootcamp.nttdata.domain.mapper.address.CityMapper;
@@ -8,10 +9,14 @@ import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.StateD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.StateRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 
+/**
+ * Clase de servicio con las principales funciones para los resources.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class StateService implements IService<State, State> {
   @Inject
@@ -21,56 +26,92 @@ public class StateService implements IService<State, State> {
   @Inject
   CityMapper cMapper;
 
+  /**
+   * Retorna todos los states no eliminados.
+   * Se valida que el campo deletedAt sea nulo.
+   *
+   * @return Lista de States no eliminadas.
+   */
   @Override
   public List<State> getAll() {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            State state = mapper.toEntity(p);
-            state.setCities(p.getCitiesD().stream()
-                  .filter(q -> (q.getDeletedAt() == null))
-                  .map(q -> cMapper.toEntity(q))
-                  .toList());
-            return state;
-          })
+          .map(this::stateWithCities)
           .toList();
   }
 
+  /**
+   * Retorna el state si no esta eliminado.
+   * Se valida que el campo deleteAd sea nulo
+   *
+   * @param id Id del elemento en la BD.
+   * @return State no eliminada
+   * @throws StateNotFoundException
+   */
   @Override
-  public State getById(Long id) {
+  public State getById(Long id) throws StateNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            State state = mapper.toEntity(p);
-            state.setCities(p.getCitiesD().stream()
-                  .filter(q -> (q.getDeletedAt() == null))
-                  .map(q -> cMapper.toEntity(q))
-                  .toList());
-            return state;
-          })
-          .orElseThrow(() -> new NotFoundException());
+          .map(this::stateWithCities)
+          .orElseThrow(() -> new StateNotFoundException("State not found."));
   }
 
+  /**
+   * Guarda un State y retorna el State guardada.
+   *
+   * @param state El elemento a crear.
+   * @return State creada.
+   */
   @Override
   public State create(State state) {
-    return mapper.toEntity(repository.save(mapper.toDto(state)));
+    return mapper.toDto(repository.save(mapper.toEntity(state)));
   }
 
+  /**
+   * Actualiza los datos de un State previamente guardada.
+   *
+   * @param id Identificador del elemento a editar.
+   * @param state  Elemento con los datos para guardar.
+   * @return State actualizado.
+   * @throws StateNotFoundException
+   */
   @Override
-  public State update(Long id, State state) {
+  public State update(Long id, State state) throws StateNotFoundException {
     StateD stateD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
+          .orElseThrow(() -> new StateNotFoundException("State not found."));
     stateD.setName(state.getName());
-    return mapper.toEntity(repository.save(stateD));
+    return mapper.toDto(repository.save(stateD));
   }
 
+  /**
+   * Elimina (softdelete) un State de la BD.
+   *
+   * @param id Identificador del elemento a eliminar.
+   * @return state eliminado.
+   * @throws StateNotFoundException
+   */
   @Override
-  public State delete(Long id) {
+  public State delete(Long id) throws StateNotFoundException {
     StateD stateD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
-    return mapper.toEntity(repository.softDelete(stateD));
+          .orElseThrow(() -> new StateNotFoundException("State not found."));
+    return mapper.toDto(repository.softDelete(stateD));
+  }
+
+  /**
+   * Retorna un estado/departamento con todos sus ciudades como entidades de lógica de negocio.
+   *
+   * @param stateD Objeto del tipo StateD. Estado/Departamento como entidad de BD.
+   * @return Objeto State con los valores del parámetro.
+   */
+  public State stateWithCities(StateD stateD) {
+    State state = mapper.toDto(stateD);
+    state.setCities(stateD.getCitiesD().stream()
+          .filter(q -> (q.getDeletedAt() == null))
+          .map(cMapper::toDto)
+          .toList());
+    return state;
   }
 }

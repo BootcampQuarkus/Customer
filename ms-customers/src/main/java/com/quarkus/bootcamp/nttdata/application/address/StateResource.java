@@ -1,5 +1,6 @@
 package com.quarkus.bootcamp.nttdata.application.address;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.entity.address.State;
 import com.quarkus.bootcamp.nttdata.domain.services.address.StateService;
 import jakarta.inject.Inject;
@@ -23,7 +24,11 @@ public class StateResource {
   @GET
   @Path("/{id}")
   public Response getById(@PathParam("id") Long id) {
-    return Response.ok(service.getById(id)).build();
+    try {
+      return Response.ok(service.getById(id)).build();
+    } catch (StateNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @POST
@@ -36,13 +41,21 @@ public class StateResource {
   @Path("{id}")
   @Transactional
   public Response update(@PathParam("id") Long id, State state) {
-    return Response.ok(service.update(id, state)).status(201).build();
+    try {
+      return Response.ok(service.update(id, state)).status(201).build();
+    } catch (StateNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @DELETE
   @Path("{id}")
   @Transactional
   public Response delete(@PathParam("id") Long id) {
-    return Response.ok(service.delete(id)).build();
+    try {
+      return Response.ok(service.delete(id)).build();
+    } catch (StateNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 }

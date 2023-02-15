@@ -1,5 +1,8 @@
 package com.quarkus.bootcamp.nttdata.domain.services.customer;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.AddressNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.customer.BodyCorporateNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.entity.customer.BodyCorporate;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
 import com.quarkus.bootcamp.nttdata.domain.mapper.address.AddressMapper;
@@ -14,10 +17,14 @@ import com.quarkus.bootcamp.nttdata.infraestructure.repository.customer.BodyCorp
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.document.DocumentRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 
+/**
+ * Clase de servicio con las principales funciones para los resources.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class BodyCorporateService implements IService<BodyCorporate, BodyCorporate> {
   @Inject
@@ -39,98 +46,109 @@ public class BodyCorporateService implements IService<BodyCorporate, BodyCorpora
   @Inject
   CityMapper cMapper;
 
+  /**
+   * Retorna todas las personas jurídicas no eliminadas.
+   * Se valida que el campo deletedAt sea nulo.
+   *
+   * @return Lista de personas jurídicas no eliminadas.
+   */
   @Override
   public List<BodyCorporate> getAll() {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            BodyCorporate bodyCorporate = mapper.toEntity(p);
-
-            bodyCorporate.setDocument(dMapper.toEntity(p.getDocumentD()));
-            bodyCorporate.getDocument().setDocumentType(dtMapper.toEntity(p.getDocumentD().getDocumentTypeD()));
-            bodyCorporate.setDocumentId(bodyCorporate.getDocument().getId());
-
-            bodyCorporate.setAddress(aMapper.toEntity(p.getAddressD()));
-            bodyCorporate.getAddress().setState(sMapper.toEntity(p.getAddressD().getStateD()));
-            bodyCorporate.getAddress().setCity(cMapper.toEntity(p.getAddressD().getCityD()));
-            bodyCorporate.setAddressId(bodyCorporate.getAddress().getId());
-
-            return bodyCorporate;
-          })
+          .map(this::bodyCorporateWithDocumentAddressAndIds)
           .toList();
   }
 
+  /**
+   * Retorna la persona jurídicas si no está eliminada.
+   * Se valida que el campo deleteAd sea nulo.
+   *
+   * @param id Id del elemento en la BD.
+   * @return persona jurídicas no eliminada.
+   * @throws BodyCorporateNotFoundException
+   */
   @Override
-  public BodyCorporate getById(Long id) {
+  public BodyCorporate getById(Long id) throws BodyCorporateNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            BodyCorporate bodyCorporate = mapper.toEntity(p);
-
-            bodyCorporate.setDocument(dMapper.toEntity(p.getDocumentD()));
-            bodyCorporate.getDocument().setDocumentType(dtMapper.toEntity(p.getDocumentD().getDocumentTypeD()));
-            bodyCorporate.setDocumentId(bodyCorporate.getDocument().getId());
-
-            bodyCorporate.setAddress(aMapper.toEntity(p.getAddressD()));
-            bodyCorporate.getAddress().setState(sMapper.toEntity(p.getAddressD().getStateD()));
-            bodyCorporate.getAddress().setCity(cMapper.toEntity(p.getAddressD().getCityD()));
-            bodyCorporate.setAddressId(bodyCorporate.getAddress().getId());
-
-            return bodyCorporate;
-          })
-          .orElseThrow(() -> new NotFoundException());
+          .map(this::bodyCorporateWithDocumentAddressAndIds)
+          .orElseThrow(() -> new BodyCorporateNotFoundException("Body corporate not found."));
   }
 
+  /**
+   * Guarda una persona jurídicas y retorna la bodyCorporate guardada.
+   *
+   * @param bodyCorporate El elemento a crear.
+   * @return persona jurídicas creada.
+   * @throws AddressNotFoundException
+   * @throws DocumentNotFoundException
+   */
   @Override
-  public BodyCorporate create(BodyCorporate bodyCorporate) {
-    BodyCorporateD bodyCorporateD = mapper.toDto(bodyCorporate);
-    try {
-      bodyCorporateD.setAddressD(aRepository.findByIdOptional(bodyCorporate.getAddressId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-      bodyCorporateD.setDocumentD(dRepository.findByIdOptional(bodyCorporate.getDocumentId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-    } catch (Exception e) {
-      throw new NotFoundException("Not found");
-    }
-    bodyCorporate = mapper.toEntity(repository.save(bodyCorporateD));
-    bodyCorporate.setAddress(aMapper.toEntity(bodyCorporateD.getAddressD()));
-    bodyCorporate.setDocument(dMapper.toEntity(bodyCorporateD.getDocumentD()));
-    return bodyCorporate;
+  public BodyCorporate create(BodyCorporate bodyCorporate) throws AddressNotFoundException, DocumentNotFoundException {
+    BodyCorporateD bodyCorporateD = this.bodyCorporateDWithAddressDAndDocumentD(mapper.toEntity(bodyCorporate), bodyCorporate);
+    return bodyCorporateWithAddressAndDocument(mapper.toDto(repository.save(bodyCorporateD)), bodyCorporateD);
   }
 
+  /**
+   * Actualiza los datos de una persona jurídicas previamente guardada.
+   *
+   * @param id Identificador del elemento a editar.
+   * @param bodyCorporate  Elemento con los datos para guardar.
+   * @return persona juridica actualizada.
+   * @throws BodyCorporateNotFoundException
+   * @throws AddressNotFoundException
+   * @throws DocumentNotFoundException
+   */
   @Override
-  public BodyCorporate update(Long id, BodyCorporate bodyCorporate) {
+  public BodyCorporate update(Long id, BodyCorporate bodyCorporate) throws BodyCorporateNotFoundException, AddressNotFoundException, DocumentNotFoundException {
     BodyCorporateD bodyCorporateD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
+          .orElseThrow(() -> new BodyCorporateNotFoundException("Body corporate not found."));
+    bodyCorporateD = this.bodyCorporateDWithAddressDAndDocumentD(bodyCorporateD, bodyCorporate);
     bodyCorporateD.setName(bodyCorporate.getName());
-    try {
-      bodyCorporateD.setAddressD(aRepository.findByIdOptional(bodyCorporate.getAddressId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-      bodyCorporateD.setDocumentD(dRepository.findByIdOptional(bodyCorporate.getDocumentId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-    } catch (Exception e) {
-      throw new NotFoundException("Not found");
-    }
-    bodyCorporate = mapper.toEntity(repository.save(bodyCorporateD));
-    bodyCorporate.setAddress(aMapper.toEntity(bodyCorporateD.getAddressD()));
-    bodyCorporate.setDocument(dMapper.toEntity(bodyCorporateD.getDocumentD()));
+    return bodyCorporateWithAddressAndDocument(mapper.toDto(repository.save(bodyCorporateD)), bodyCorporateD);
+  }
+
+  /**
+   * Elimina (softdelete) una persona jurídicas de la BD.
+   *
+   * @param id Identificador del elemento a eliminar.
+   * @return persona jurídicas eliminada.
+   * @throws BodyCorporateNotFoundException
+   */
+  @Override
+  public BodyCorporate delete(Long id) throws BodyCorporateNotFoundException {
+    BodyCorporateD bodyCorporateD = repository.findByIdOptional(id)
+          .filter(p -> (p.getDeletedAt() == null))
+          .orElseThrow(() -> new BodyCorporateNotFoundException("Body corporate not found."));
+    return bodyCorporateWithAddressAndDocument(mapper.toDto(repository.softDelete(bodyCorporateD)), bodyCorporateD);
+  }
+
+  public BodyCorporate bodyCorporateWithDocumentAddressAndIds(BodyCorporateD bodyCorporateD) {
+    BodyCorporate bodyCorporate = bodyCorporateWithAddressAndDocument(mapper.toDto(bodyCorporateD), bodyCorporateD);
+    bodyCorporate.getAddress().setState(sMapper.toDto(bodyCorporateD.getAddressD().getStateD()));
+    bodyCorporate.getAddress().setCity(cMapper.toDto(bodyCorporateD.getAddressD().getCityD()));
+    bodyCorporate.setAddressId(bodyCorporate.getAddress().getId());
+    bodyCorporate.getDocument().setDocumentType(dtMapper.toDto(bodyCorporateD.getDocumentD().getDocumentTypeD()));
+    bodyCorporate.setDocumentId(bodyCorporate.getDocument().getId());
     return bodyCorporate;
   }
 
-  @Override
-  public BodyCorporate delete(Long id) {
-    BodyCorporateD bodyCorporateD = repository.findByIdOptional(id)
+  public BodyCorporateD bodyCorporateDWithAddressDAndDocumentD(BodyCorporateD bodyCorporateD, BodyCorporate bodyCorporate) throws AddressNotFoundException, DocumentNotFoundException {
+    bodyCorporateD.setAddressD(aRepository.findByIdOptional(bodyCorporate.getAddressId())
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
-    BodyCorporate bodyCorporate = mapper.toEntity(repository.softDelete(bodyCorporateD));
-    bodyCorporate.setAddress(aMapper.toEntity(bodyCorporateD.getAddressD()));
-    bodyCorporate.setDocument(dMapper.toEntity(bodyCorporateD.getDocumentD()));
+          .orElseThrow(() -> new AddressNotFoundException("Address not found.")));
+    bodyCorporateD.setDocumentD(dRepository.findByIdOptional(bodyCorporate.getDocumentId())
+          .filter(p -> (p.getDeletedAt() == null))
+          .orElseThrow(() -> new DocumentNotFoundException("Document not found.")));
+    return bodyCorporateD;
+  }
+
+  public BodyCorporate bodyCorporateWithAddressAndDocument(BodyCorporate bodyCorporate, BodyCorporateD bodyCorporateD) {
+    bodyCorporate.setAddress(aMapper.toDto(bodyCorporateD.getAddressD()));
+    bodyCorporate.setDocument(dMapper.toDto(bodyCorporateD.getDocumentD()));
     return bodyCorporate;
   }
 }

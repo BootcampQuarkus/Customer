@@ -1,5 +1,8 @@
 package com.quarkus.bootcamp.nttdata.domain.services.address;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.AddressNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.CityNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.entity.address.Address;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
 import com.quarkus.bootcamp.nttdata.domain.mapper.address.AddressMapper;
@@ -11,10 +14,14 @@ import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.CityRepos
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.StateRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 
+/**
+ * Clase de servicio con las principales funciones para los resources.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class AddressService implements IService<Address, Address> {
   @Inject
@@ -30,74 +37,128 @@ public class AddressService implements IService<Address, Address> {
   @Inject
   CityMapper cMapper;
 
+  /**
+   * Retorna todas las direcciones no eliminadas.
+   * Se valida que el campo deletedAt sea nulo.
+   *
+   * @return Lista de direcciones no eliminadas.
+   */
   @Override
   public List<Address> getAll() {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            Address address = mapper.toEntity(p);
-            address.setState(sMapper.toEntity(p.getStateD()));
-            address.setStateId(address.getState().getId());
-            address.setCity(cMapper.toEntity(p.getCityD()));
-            address.setCityId(address.getCity().getId());
-            return address;
-          })
+          .map(this::addressWithStateCityAndIds)
           .toList();
   }
 
+  /**
+   * Retorna la dirección si no está eliminada.
+   * Se valida que el campo deleteAd sea nulo
+   *
+   * @param id Id del elemento en la BD.
+   * @return dirección no eliminada
+   * @throws AddressNotFoundException
+   */
   @Override
-  public Address getById(Long id) {
+  public Address getById(Long id) throws AddressNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            Address address = mapper.toEntity(p);
-            address.setState(sMapper.toEntity(p.getStateD()));
-            address.setStateId(address.getState().getId());
-            address.setCity(cMapper.toEntity(p.getCityD()));
-            address.setCityId(address.getCity().getId());
-            return address;
-          })
-          .orElseThrow(() -> new NotFoundException());
+          .map(this::addressWithStateCityAndIds)
+          .orElseThrow(() -> new AddressNotFoundException("Address not found."));
   }
 
+  /**
+   * Guarda una dirección y retorna la dirección guardada.
+   *
+   * @param address El elemento a crear.
+   * @return dirección creada.
+   * @throws StateNotFoundException
+   * @throws CityNotFoundException
+   */
   @Override
-  public Address create(Address address) {
-    AddressD addressD = mapper.toDto(address);
+  public Address create(Address address) throws StateNotFoundException, CityNotFoundException {
+    AddressD addressD = addressDWithStateDAndCityD(address, mapper.toEntity(address));
+    return this.addressWithStateAndCity(repository.save(addressD));
+  }
+
+  /**
+   * Actualiza los datos de una dirección previamente guardada.
+   *
+   * @param id Identificador del elemento a editar.
+   * @param address  Elemento con los datos para guardar.
+   * @return dirección actualizada.
+   * @throws StateNotFoundException
+   * @throws CityNotFoundException
+   * @throws AddressNotFoundException
+   */
+  @Override
+  public Address update(Long id, Address address) throws StateNotFoundException, CityNotFoundException, AddressNotFoundException {
+    AddressD addressD = repository.findByIdOptional(id)
+          .filter(p -> (p.getDeletedAt() == null))
+          .orElseThrow(() -> new AddressNotFoundException("Address not found."));
+    addressD = addressDWithStateDAndCityD(address, addressD);
+    addressD.setAddress(address.getAddress());
+    return addressWithStateAndCity(repository.save(addressD));
+  }
+
+  /**
+   * Elimina (softdelete) una dirección de la BD.
+   *
+   * @param id Identificador del elemento a eliminar.
+   * @return dirección eliminada.
+   * @throws AddressNotFoundException
+   */
+  @Override
+  public Address delete(Long id) throws AddressNotFoundException {
+    AddressD addressD = repository.findByIdOptional(id)
+          .filter(p -> (p.getDeletedAt() == null))
+          .orElseThrow(() -> new AddressNotFoundException("Address not found."));
+    return addressWithStateAndCity(repository.softDelete(addressD));
+  }
+
+  /**
+   * Se agrega a un Address el State y City que se obtiene del AddressD.
+   *
+   * @param address
+   * @param addressD
+   * @return
+   * @throws CityNotFoundException
+   * @throws StateNotFoundException
+   */
+  public AddressD addressDWithStateDAndCityD(Address address, AddressD addressD) throws CityNotFoundException, StateNotFoundException {
     addressD.setCityD(cRepository.findByIdOptional(address.getCityId())
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException()));
+          .orElseThrow(() -> new CityNotFoundException("City not found.")));
     addressD.setStateD(sRepository.findByIdOptional(address.getStateId())
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException()));
-    address = mapper.toEntity(repository.save(addressD));
-    address.setState(sMapper.toEntity(addressD.getStateD()));
-    address.setCity(cMapper.toEntity(addressD.getCityD()));
+          .orElseThrow(() -> new StateNotFoundException("State not found")));
+    return addressD;
+  }
+
+  /**
+   * Se Transforma un AddressD a Address con su State y City.
+   *
+   * @param addressD Objeto del tipo AddressD.
+   * @return Objeto Address con los valores del parámetro transformados a entidades de lógica de negocio.
+   */
+  public Address addressWithStateAndCity(AddressD addressD) {
+    Address address = mapper.toDto(addressD);
+    address.setState(sMapper.toDto(addressD.getStateD()));
+    address.setCity(cMapper.toDto(addressD.getCityD()));
     return address;
   }
 
-  @Override
-  public Address update(Long id, Address address) {
-    AddressD addressD = repository.findByIdOptional(id)
-          .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
-    addressD.setAddress(address.getAddress());
-    addressD.setCityD(cRepository.getById(address.getCityId()));
-    addressD.setStateD(sRepository.getById(address.getStateId()));
-    address = mapper.toEntity(repository.save(addressD));
-    address.setState(sMapper.toEntity(addressD.getStateD()));
-    address.setCity(cMapper.toEntity(addressD.getCityD()));
-    return address;
-  }
-
-  @Override
-  public Address delete(Long id) {
-    AddressD addressD = repository.findByIdOptional(id)
-          .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
-    Address address = mapper.toEntity(repository.softDelete(addressD));
-    address.setState(sMapper.toEntity(addressD.getStateD()));
-    address.setCity(cMapper.toEntity(addressD.getCityD()));
+  /**
+   * Se Transforma un AddressD a Address con su State, City e identificadores de cada uno.
+   *
+   * @param addressD Objeto del tipo AddressD.
+   * @return Objeto Address con los valores del parámetro transformados a entidades de lógica de negocio.
+   */
+  public Address addressWithStateCityAndIds(AddressD addressD) {
+    Address address = this.addressWithStateAndCity(addressD);
+    address.setStateId(address.getState().getId());
+    address.setCityId(address.getCity().getId());
     return address;
   }
 }
