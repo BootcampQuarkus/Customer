@@ -29,8 +29,7 @@ class AddressMapperTest {
   @Test
   void toEntityReturnEntity() {
     Address address = new Address();
-    AddressD actual = mapper.toEntity(address);
-    Assertions.assertInstanceOf(AddressD.class, actual);
+    Assertions.assertInstanceOf(AddressD.class, mapper.toEntity(address));
   }
 
   @Test
@@ -40,8 +39,7 @@ class AddressMapperTest {
     AddressD addressD = new AddressD();
     addressD.setCityD(cityD);
     addressD.setStateD(stateD);
-    Address actual = mapper.toDto(addressD);
-    Assertions.assertInstanceOf(Address.class, actual);
+    Assertions.assertInstanceOf(Address.class, mapper.toDto(addressD));
   }
 
   @Test
@@ -55,9 +53,7 @@ class AddressMapperTest {
   @Test
   void toDtoVoid() {
     AddressD addressD = new AddressD();
-    Address expected = new Address();
-    Address actual = mapper.toDto(addressD);
-    Assertions.assertEquals(expected, actual);
+    Assertions.assertThrows(NullPointerException.class, () -> mapper.toDto(addressD));
   }
 
   @Test

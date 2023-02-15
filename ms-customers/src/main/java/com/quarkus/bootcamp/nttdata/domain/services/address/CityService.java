@@ -2,10 +2,10 @@ package com.quarkus.bootcamp.nttdata.domain.services.address;
 
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.CityNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Util;
 import com.quarkus.bootcamp.nttdata.domain.entity.address.City;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
 import com.quarkus.bootcamp.nttdata.domain.mapper.address.CityMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.StateMapper;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.CityD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.CityRepository;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.StateRepository;
@@ -28,7 +28,7 @@ public class CityService implements IService<City, City> {
   @Inject
   CityMapper mapper;
   @Inject
-  StateMapper sMapper;
+  Util util;
 
   /**
    * Retorna todas las ciudades no eliminadas.
@@ -41,7 +41,7 @@ public class CityService implements IService<City, City> {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::cityWithState)
+          .map(util::cityWithStateAndAddress)
           .toList();
   }
 
@@ -57,7 +57,7 @@ public class CityService implements IService<City, City> {
   public City getById(Long id) throws CityNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::cityWithState)
+          .map(util::cityWithStateAndAddress)
           .orElseThrow(() -> new CityNotFoundException("City not found."));
   }
 
@@ -80,8 +80,8 @@ public class CityService implements IService<City, City> {
   /**
    * Actualiza los datos de una ciudad previamente guardada.
    *
-   * @param id Identificador del elemento a editar.
-   * @param city  Elemento con los datos para guardar.
+   * @param id   Identificador del elemento a editar.
+   * @param city Elemento con los datos para guardar.
    * @return ciudad actualizada.
    */
   @Override
@@ -109,18 +109,4 @@ public class CityService implements IService<City, City> {
           .orElseThrow(() -> new CityNotFoundException("City not found."));
     return mapper.toDto(repository.softDelete(cityD));
   }
-
-  /**
-   * Se transforma un CityD a City con su State.
-   *
-   * @param cityD  Objeto del tipo CityD
-   * @return Objeto del tipo City con los datos del CityD.
-   */
-  public City cityWithState(CityD cityD) {
-    City city = mapper.toDto(cityD);
-    city.setStates(sMapper.toDto(cityD.getStateD()));
-    city.setStateId(city.getStates().getId());
-    return city;
-  }
 }
-

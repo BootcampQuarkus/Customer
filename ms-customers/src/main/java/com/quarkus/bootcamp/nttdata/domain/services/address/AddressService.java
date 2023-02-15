@@ -3,15 +3,12 @@ package com.quarkus.bootcamp.nttdata.domain.services.address;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.AddressNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.CityNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Util;
 import com.quarkus.bootcamp.nttdata.domain.entity.address.Address;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
 import com.quarkus.bootcamp.nttdata.domain.mapper.address.AddressMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.CityMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.StateMapper;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.AddressD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.AddressRepository;
-import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.CityRepository;
-import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.StateRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -27,15 +24,9 @@ public class AddressService implements IService<Address, Address> {
   @Inject
   AddressRepository repository;
   @Inject
-  StateRepository sRepository;
-  @Inject
-  CityRepository cRepository;
-  @Inject
   AddressMapper mapper;
   @Inject
-  StateMapper sMapper;
-  @Inject
-  CityMapper cMapper;
+  Util util;
 
   /**
    * Retorna todas las direcciones no eliminadas.
@@ -48,7 +39,7 @@ public class AddressService implements IService<Address, Address> {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::addressWithStateCityAndIds)
+          .map(util::addressWithStateCityAndIds)
           .toList();
   }
 
@@ -64,7 +55,7 @@ public class AddressService implements IService<Address, Address> {
   public Address getById(Long id) throws AddressNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::addressWithStateCityAndIds)
+          .map(util::addressWithStateCityAndIds)
           .orElseThrow(() -> new AddressNotFoundException("Address not found."));
   }
 
@@ -78,15 +69,15 @@ public class AddressService implements IService<Address, Address> {
    */
   @Override
   public Address create(Address address) throws StateNotFoundException, CityNotFoundException {
-    AddressD addressD = addressDWithStateDAndCityD(address, mapper.toEntity(address));
-    return this.addressWithStateAndCity(repository.save(addressD));
+    AddressD addressD = util.addressDWithStateDAndCityD(address, mapper.toEntity(address));
+    return util.addressWithStateAndCity(repository.save(addressD));
   }
 
   /**
    * Actualiza los datos de una dirección previamente guardada.
    *
-   * @param id Identificador del elemento a editar.
-   * @param address  Elemento con los datos para guardar.
+   * @param id      Identificador del elemento a editar.
+   * @param address Elemento con los datos para guardar.
    * @return dirección actualizada.
    * @throws StateNotFoundException
    * @throws CityNotFoundException
@@ -97,9 +88,9 @@ public class AddressService implements IService<Address, Address> {
     AddressD addressD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
           .orElseThrow(() -> new AddressNotFoundException("Address not found."));
-    addressD = addressDWithStateDAndCityD(address, addressD);
+    addressD = util.addressDWithStateDAndCityD(address, addressD);
     addressD.setAddress(address.getAddress());
-    return addressWithStateAndCity(repository.save(addressD));
+    return util.addressWithStateAndCity(repository.save(addressD));
   }
 
   /**
@@ -114,51 +105,6 @@ public class AddressService implements IService<Address, Address> {
     AddressD addressD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
           .orElseThrow(() -> new AddressNotFoundException("Address not found."));
-    return addressWithStateAndCity(repository.softDelete(addressD));
-  }
-
-  /**
-   * Se agrega a un Address el State y City que se obtiene del AddressD.
-   *
-   * @param address
-   * @param addressD
-   * @return
-   * @throws CityNotFoundException
-   * @throws StateNotFoundException
-   */
-  public AddressD addressDWithStateDAndCityD(Address address, AddressD addressD) throws CityNotFoundException, StateNotFoundException {
-    addressD.setCityD(cRepository.findByIdOptional(address.getCityId())
-          .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new CityNotFoundException("City not found.")));
-    addressD.setStateD(sRepository.findByIdOptional(address.getStateId())
-          .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new StateNotFoundException("State not found")));
-    return addressD;
-  }
-
-  /**
-   * Se Transforma un AddressD a Address con su State y City.
-   *
-   * @param addressD Objeto del tipo AddressD.
-   * @return Objeto Address con los valores del parámetro transformados a entidades de lógica de negocio.
-   */
-  public Address addressWithStateAndCity(AddressD addressD) {
-    Address address = mapper.toDto(addressD);
-    address.setState(sMapper.toDto(addressD.getStateD()));
-    address.setCity(cMapper.toDto(addressD.getCityD()));
-    return address;
-  }
-
-  /**
-   * Se Transforma un AddressD a Address con su State, City e identificadores de cada uno.
-   *
-   * @param addressD Objeto del tipo AddressD.
-   * @return Objeto Address con los valores del parámetro transformados a entidades de lógica de negocio.
-   */
-  public Address addressWithStateCityAndIds(AddressD addressD) {
-    Address address = this.addressWithStateAndCity(addressD);
-    address.setStateId(address.getState().getId());
-    address.setCityId(address.getCity().getId());
-    return address;
+    return util.addressWithStateAndCity(repository.softDelete(addressD));
   }
 }

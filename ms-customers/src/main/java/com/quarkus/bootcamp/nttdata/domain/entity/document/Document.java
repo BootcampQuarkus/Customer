@@ -15,7 +15,7 @@ public class Document {
   /**
    * Serie del documento.
    * Ejm: 12345678 (DNI)
-   *      12345678901 (RUC)
+   * 12345678901 (RUC)
    */
   protected String serial;
   /**

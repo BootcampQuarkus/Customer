@@ -2,6 +2,7 @@ package com.quarkus.bootcamp.nttdata.domain.services.document;
 
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentTypeNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Util;
 import com.quarkus.bootcamp.nttdata.domain.entity.document.Document;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
 import com.quarkus.bootcamp.nttdata.domain.mapper.document.DocumentMapper;
@@ -29,6 +30,8 @@ public class DocumentService implements IService<Document, Document> {
   DocumentMapper mapper;
   @Inject
   DocumentTypeMapper dtMapper;
+  @Inject
+  Util util;
 
   /**
    * Retorna todos los documentos no eliminadas.
@@ -41,7 +44,7 @@ public class DocumentService implements IService<Document, Document> {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::documentWithDocumentType)
+          .map(util::documentWithDocumentType)
           .toList();
   }
 
@@ -56,7 +59,7 @@ public class DocumentService implements IService<Document, Document> {
   @Override
   public Document getById(Long id) throws DocumentNotFoundException {
     return repository.findByIdOptional(id)
-          .map(this::documentWithDocumentType)
+          .map(util::documentWithDocumentType)
           .orElseThrow(() -> new DocumentNotFoundException("Document not found."));
   }
 
@@ -81,8 +84,8 @@ public class DocumentService implements IService<Document, Document> {
   /**
    * Actualiza los datos de un documento previamente guardada.
    *
-   * @param id Identificador del elemento a editar.
-   * @param document  Elemento con los datos para guardar.
+   * @param id       Identificador del elemento a editar.
+   * @param document Elemento con los datos para guardar.
    * @return documento actualizado.
    * @throws DocumentNotFoundException
    * @throws DocumentTypeNotFoundException
@@ -96,7 +99,7 @@ public class DocumentService implements IService<Document, Document> {
     documentD.setDocumentTypeD(dtRepository.findByIdOptional(document.getDocumentTypeId())
           .filter(p -> (p.getDeletedAt() == null))
           .orElseThrow(() -> new DocumentTypeNotFoundException("Document type not found.")));
-    return documentWithDocumentTypeAndId(mapper.toDto(repository.softDelete(documentD)), documentD);
+    return util.documentWithDocumentTypeAndId(mapper.toDto(repository.softDelete(documentD)), documentD);
   }
 
   /**
@@ -111,18 +114,6 @@ public class DocumentService implements IService<Document, Document> {
     DocumentD documentD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
           .orElseThrow(() -> new DocumentNotFoundException("Documento not found"));
-    return documentWithDocumentTypeAndId(mapper.toDto(repository.softDelete(documentD)), documentD);
-  }
-
-  public Document documentWithDocumentTypeAndId(Document document, DocumentD documentD) {
-    document.setDocumentType(dtMapper.toDto(documentD.getDocumentTypeD()));
-    document.setDocumentTypeId(document.getDocumentType().getId());
-    return document;
-  }
-
-  public Document documentWithDocumentType(DocumentD documentD) {
-    Document document = mapper.toDto(documentD);
-    document.setDocumentType(dtMapper.toDto(documentD.getDocumentTypeD()));
-    return document;
+    return util.documentWithDocumentTypeAndId(mapper.toDto(repository.softDelete(documentD)), documentD);
   }
 }

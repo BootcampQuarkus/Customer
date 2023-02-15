@@ -3,18 +3,12 @@ package com.quarkus.bootcamp.nttdata.domain.services.customer;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.AddressNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.customer.NaturalPersonNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Util;
 import com.quarkus.bootcamp.nttdata.domain.entity.customer.NaturalPerson;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.AddressMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.CityMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.StateMapper;
 import com.quarkus.bootcamp.nttdata.domain.mapper.customer.NaturalPersonMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.document.DocumentMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.document.DocumentTypeMapper;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.customer.NaturalPersonD;
-import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.AddressRepository;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.customer.NaturalPersonRepository;
-import com.quarkus.bootcamp.nttdata.infraestructure.repository.document.DocumentRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -30,21 +24,9 @@ public class NaturalPersonService implements IService<NaturalPerson, NaturalPers
   @Inject
   NaturalPersonRepository repository;
   @Inject
-  DocumentRepository dRepository;
-  @Inject
-  AddressRepository aRepository;
-  @Inject
   NaturalPersonMapper mapper;
   @Inject
-  DocumentMapper dMapper;
-  @Inject
-  DocumentTypeMapper dtMapper;
-  @Inject
-  AddressMapper aMapper;
-  @Inject
-  StateMapper sMapper;
-  @Inject
-  CityMapper cMapper;
+  Util util;
 
   /**
    * Retorna todas las personas naturales no eliminadas.
@@ -57,7 +39,7 @@ public class NaturalPersonService implements IService<NaturalPerson, NaturalPers
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::naturalPersonWithDocumentAndAddress)
+          .map(util::naturalPersonWithDocumentAndAddress)
           .toList();
   }
 
@@ -73,7 +55,7 @@ public class NaturalPersonService implements IService<NaturalPerson, NaturalPers
   public NaturalPerson getById(Long id) throws NaturalPersonNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::naturalPersonWithDocumentAndAddress)
+          .map(util::naturalPersonWithDocumentAndAddress)
           .orElseThrow(() -> new NaturalPersonNotFoundException("Natural Person not found."));
   }
 
@@ -87,15 +69,15 @@ public class NaturalPersonService implements IService<NaturalPerson, NaturalPers
    */
   @Override
   public NaturalPerson create(NaturalPerson naturalPerson) throws AddressNotFoundException, DocumentNotFoundException {
-    NaturalPersonD naturalPersonD = this.naturalPersonDDWithAddressDAndDocumentD(mapper.toEntity(naturalPerson), naturalPerson);
-    return this.naturalPersonWithAddressAndDocument(mapper.toDto(repository.save(naturalPersonD)), naturalPersonD);
+    NaturalPersonD naturalPersonD = util.naturalPersonDDWithAddressDAndDocumentD(mapper.toEntity(naturalPerson), naturalPerson);
+    return util.naturalPersonWithAddressAndDocument(mapper.toDto(repository.save(naturalPersonD)), naturalPersonD);
   }
 
   /**
    * Actualiza los datos de una persona natural previamente guardada.
    *
-   * @param id Identificador del elemento a editar.
-   * @param naturalPerson  Elemento con los datos para guardar.
+   * @param id            Identificador del elemento a editar.
+   * @param naturalPerson Elemento con los datos para guardar.
    * @return persona natural actualizada.
    * @throws NaturalPersonNotFoundException
    * @throws AddressNotFoundException
@@ -106,10 +88,10 @@ public class NaturalPersonService implements IService<NaturalPerson, NaturalPers
     NaturalPersonD naturalPersonD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
           .orElseThrow(() -> new NaturalPersonNotFoundException("Natural person not found."));
-    naturalPersonD = this.naturalPersonDDWithAddressDAndDocumentD(naturalPersonD, naturalPerson);
+    naturalPersonD = util.naturalPersonDDWithAddressDAndDocumentD(naturalPersonD, naturalPerson);
     naturalPersonD.setName(naturalPerson.getName());
     naturalPersonD.setLastName(naturalPerson.getLastName());
-    return naturalPersonWithAddressAndDocument(mapper.toDto(repository.save(naturalPersonD)), naturalPersonD);
+    return util.naturalPersonWithAddressAndDocument(mapper.toDto(repository.save(naturalPersonD)), naturalPersonD);
   }
 
   /**
@@ -124,32 +106,6 @@ public class NaturalPersonService implements IService<NaturalPerson, NaturalPers
     NaturalPersonD naturalPersonD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
           .orElseThrow(() -> new NaturalPersonNotFoundException("Natural person not found"));
-    return naturalPersonWithAddressAndDocument(mapper.toDto(repository.softDelete(naturalPersonD)), naturalPersonD);
-  }
-
-  public NaturalPerson naturalPersonWithDocumentAndAddress(NaturalPersonD naturalPersond) {
-    NaturalPerson naturalPerson = naturalPersonWithAddressAndDocument(mapper.toDto(naturalPersond), naturalPersond);
-    naturalPerson.getAddress().setState(sMapper.toDto(naturalPersond.getAddressD().getStateD()));
-    naturalPerson.getAddress().setCity(cMapper.toDto(naturalPersond.getAddressD().getCityD()));
-    naturalPerson.setAddressId(naturalPerson.getAddress().getId());
-    naturalPerson.getDocument().setDocumentType(dtMapper.toDto(naturalPersond.getDocumentD().getDocumentTypeD()));
-    naturalPerson.setDocumentId(naturalPerson.getDocument().getId());
-    return naturalPerson;
-  }
-
-  public NaturalPersonD naturalPersonDDWithAddressDAndDocumentD(NaturalPersonD naturalPersonD, NaturalPerson naturalPerson) throws AddressNotFoundException, DocumentNotFoundException {
-    naturalPersonD.setAddressD(aRepository.findByIdOptional(naturalPerson.getAddressId())
-          .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new AddressNotFoundException("Address not found.")));
-    naturalPersonD.setDocumentD(dRepository.findByIdOptional(naturalPerson.getDocumentId())
-          .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new DocumentNotFoundException("Document not found.")));
-    return naturalPersonD;
-  }
-
-  public NaturalPerson naturalPersonWithAddressAndDocument(NaturalPerson naturalPerson, NaturalPersonD naturalPersonD) {
-    naturalPerson.setAddress(aMapper.toDto(naturalPersonD.getAddressD()));
-    naturalPerson.setDocument(dMapper.toDto(naturalPersonD.getDocumentD()));
-    return naturalPerson;
+    return util.naturalPersonWithAddressAndDocument(mapper.toDto(repository.softDelete(naturalPersonD)), naturalPersonD);
   }
 }

@@ -1,9 +1,9 @@
 package com.quarkus.bootcamp.nttdata.domain.services.address;
 
 import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Util;
 import com.quarkus.bootcamp.nttdata.domain.entity.address.State;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.CityMapper;
 import com.quarkus.bootcamp.nttdata.domain.mapper.address.StateMapper;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.StateD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.StateRepository;
@@ -24,7 +24,7 @@ public class StateService implements IService<State, State> {
   @Inject
   StateMapper mapper;
   @Inject
-  CityMapper cMapper;
+  Util util;
 
   /**
    * Retorna todos los states no eliminados.
@@ -37,7 +37,7 @@ public class StateService implements IService<State, State> {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::stateWithCities)
+          .map(util::stateWithCitiesAndAddress)
           .toList();
   }
 
@@ -53,7 +53,7 @@ public class StateService implements IService<State, State> {
   public State getById(Long id) throws StateNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(this::stateWithCities)
+          .map(util::stateWithCitiesAndAddress)
           .orElseThrow(() -> new StateNotFoundException("State not found."));
   }
 
@@ -71,8 +71,8 @@ public class StateService implements IService<State, State> {
   /**
    * Actualiza los datos de un State previamente guardada.
    *
-   * @param id Identificador del elemento a editar.
-   * @param state  Elemento con los datos para guardar.
+   * @param id    Identificador del elemento a editar.
+   * @param state Elemento con los datos para guardar.
    * @return State actualizado.
    * @throws StateNotFoundException
    */
@@ -98,20 +98,5 @@ public class StateService implements IService<State, State> {
           .filter(p -> (p.getDeletedAt() == null))
           .orElseThrow(() -> new StateNotFoundException("State not found."));
     return mapper.toDto(repository.softDelete(stateD));
-  }
-
-  /**
-   * Retorna un estado/departamento con todos sus ciudades como entidades de lógica de negocio.
-   *
-   * @param stateD Objeto del tipo StateD. Estado/Departamento como entidad de BD.
-   * @return Objeto State con los valores del parámetro.
-   */
-  public State stateWithCities(StateD stateD) {
-    State state = mapper.toDto(stateD);
-    state.setCities(stateD.getCitiesD().stream()
-          .filter(q -> (q.getDeletedAt() == null))
-          .map(cMapper::toDto)
-          .toList());
-    return state;
   }
 }
