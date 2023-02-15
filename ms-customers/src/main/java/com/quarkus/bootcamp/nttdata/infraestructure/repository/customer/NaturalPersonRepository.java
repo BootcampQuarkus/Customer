@@ -1,9 +1,9 @@
 package com.quarkus.bootcamp.nttdata.infraestructure.repository.customer;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.customer.NaturalPersonNotFoundException;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.customer.NaturalPersonD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.IRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotFoundException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -11,6 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio para las personas naturales.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class NaturalPersonRepository implements IRepository<NaturalPersonD> {
   /**
@@ -30,12 +35,13 @@ public class NaturalPersonRepository implements IRepository<NaturalPersonD> {
    *
    * @param id Identificador del elemento a devolver.
    * @return Elemento encontrado.
+   * @throws NaturalPersonNotFoundException
    */
   @Override
-  public NaturalPersonD getById(Long id) {
+  public NaturalPersonD getById(Long id) throws NaturalPersonNotFoundException {
     Optional<NaturalPersonD> naturalPersonD = NaturalPersonD.findByIdOptional(id);
     if (naturalPersonD.isEmpty()) {
-      throw new NotFoundException("City not found");
+      throw new NaturalPersonNotFoundException("Natural Person not found");
     }
     return naturalPersonD.get();
   }

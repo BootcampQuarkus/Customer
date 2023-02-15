@@ -1,5 +1,7 @@
 package com.quarkus.bootcamp.nttdata.application.document;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentTypeNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.entity.document.Document;
 import com.quarkus.bootcamp.nttdata.domain.services.document.DocumentService;
 import jakarta.inject.Inject;
@@ -23,26 +25,42 @@ public class DocumentResource {
   @GET
   @Path("/{id}")
   public Response getById(@PathParam("id") Long id) {
-    return Response.ok(service.getById(id)).build();
+    try {
+      return Response.ok(service.getById(id)).build();
+    } catch (DocumentNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @POST
   @Transactional
   public Response create(Document document) {
-    return Response.ok(service.create(document)).status(201).build();
+    try {
+      return Response.ok(service.create(document)).status(201).build();
+    } catch (DocumentTypeNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @PUT
   @Path("{id}")
   @Transactional
   public Response update(@PathParam("id") Long id, Document document) {
-    return Response.ok(service.update(id, document)).status(201).build();
+    try {
+      return Response.ok(service.update(id, document)).status(201).build();
+    } catch (DocumentNotFoundException | DocumentTypeNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @DELETE
   @Path("{id}")
   @Transactional
   public Response delete(@PathParam("id") Long id) {
-    return Response.ok(service.delete(id)).build();
+    try {
+      return Response.ok(service.delete(id)).build();
+    } catch (DocumentNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 }

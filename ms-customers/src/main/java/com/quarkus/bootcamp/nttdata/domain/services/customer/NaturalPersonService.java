@@ -1,137 +1,111 @@
 package com.quarkus.bootcamp.nttdata.domain.services.customer;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.AddressNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.customer.NaturalPersonNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentNotFoundException;
+import com.quarkus.bootcamp.nttdata.domain.Util;
 import com.quarkus.bootcamp.nttdata.domain.entity.customer.NaturalPerson;
 import com.quarkus.bootcamp.nttdata.domain.interfaces.IService;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.AddressMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.CityMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.address.StateMapper;
 import com.quarkus.bootcamp.nttdata.domain.mapper.customer.NaturalPersonMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.document.DocumentMapper;
-import com.quarkus.bootcamp.nttdata.domain.mapper.document.DocumentTypeMapper;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.customer.NaturalPersonD;
-import com.quarkus.bootcamp.nttdata.infraestructure.repository.address.AddressRepository;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.customer.NaturalPersonRepository;
-import com.quarkus.bootcamp.nttdata.infraestructure.repository.document.DocumentRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 
+/**
+ * Clase de servicio con las principales funciones para los resources.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class NaturalPersonService implements IService<NaturalPerson, NaturalPerson> {
   @Inject
   NaturalPersonRepository repository;
   @Inject
-  DocumentRepository dRepository;
-  @Inject
-  AddressRepository aRepository;
-  @Inject
   NaturalPersonMapper mapper;
   @Inject
-  DocumentMapper dMapper;
-  @Inject
-  DocumentTypeMapper dtMapper;
-  @Inject
-  AddressMapper aMapper;
-  @Inject
-  StateMapper sMapper;
-  @Inject
-  CityMapper cMapper;
+  Util util;
 
+  /**
+   * Retorna todas las personas naturales no eliminadas.
+   * Se valida que el campo deletedAt sea nulo.
+   *
+   * @return Lista de personas naturales no eliminadas.
+   */
   @Override
   public List<NaturalPerson> getAll() {
     return repository.getAll()
           .stream()
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            NaturalPerson naturalPerson = mapper.toEntity(p);
-
-            naturalPerson.setDocument(dMapper.toEntity(p.getDocumentD()));
-            naturalPerson.getDocument().setDocumentType(dtMapper.toEntity(p.getDocumentD().getDocumentTypeD()));
-            naturalPerson.setDocumentId(naturalPerson.getDocument().getId());
-
-            naturalPerson.setAddress(aMapper.toEntity(p.getAddressD()));
-            naturalPerson.getAddress().setState(sMapper.toEntity(p.getAddressD().getStateD()));
-            naturalPerson.getAddress().setCity(cMapper.toEntity(p.getAddressD().getCityD()));
-            naturalPerson.setAddressId(naturalPerson.getAddress().getId());
-
-            return naturalPerson;
-          })
+          .map(util::naturalPersonWithDocumentAndAddress)
           .toList();
   }
 
+  /**
+   * Retorna la persona natural si no está eliminada.
+   * Se valida que el campo deleteAd sea nulo
+   *
+   * @param id Id del elemento en la BD.
+   * @return persona natural no eliminada
+   * @throws NaturalPersonNotFoundException
+   */
   @Override
-  public NaturalPerson getById(Long id) {
+  public NaturalPerson getById(Long id) throws NaturalPersonNotFoundException {
     return repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .map(p -> {
-            NaturalPerson naturalPerson = mapper.toEntity(p);
-
-            naturalPerson.setDocument(dMapper.toEntity(p.getDocumentD()));
-            naturalPerson.getDocument().setDocumentType(dtMapper.toEntity(p.getDocumentD().getDocumentTypeD()));
-            naturalPerson.setDocumentId(naturalPerson.getDocument().getId());
-
-            naturalPerson.setAddress(aMapper.toEntity(p.getAddressD()));
-            naturalPerson.getAddress().setState(sMapper.toEntity(p.getAddressD().getStateD()));
-            naturalPerson.getAddress().setCity(cMapper.toEntity(p.getAddressD().getCityD()));
-            naturalPerson.setAddressId(naturalPerson.getAddress().getId());
-
-            return naturalPerson;
-          })
-          .orElseThrow(() -> new NotFoundException());
+          .map(util::naturalPersonWithDocumentAndAddress)
+          .orElseThrow(() -> new NaturalPersonNotFoundException("Natural Person not found."));
   }
 
+  /**
+   * Guarda una persona natural y retorna la bodyCorporate guardada.
+   *
+   * @param naturalPerson El elemento a crear.
+   * @return persona natural creada.
+   * @throws AddressNotFoundException
+   * @throws DocumentNotFoundException
+   */
   @Override
-  public NaturalPerson create(NaturalPerson naturalPerson) {
-    NaturalPersonD naturalPersonD = mapper.toDto(naturalPerson);
-    try {
-      naturalPersonD.setAddressD(aRepository.findByIdOptional(naturalPerson.getAddressId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-      naturalPersonD.setDocumentD(dRepository.findByIdOptional(naturalPerson.getDocumentId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-    } catch (Exception e) {
-      throw new NotFoundException("Not found");
-    }
-    naturalPerson = mapper.toEntity(repository.save(naturalPersonD));
-    naturalPerson.setAddress(aMapper.toEntity(naturalPersonD.getAddressD()));
-    naturalPerson.setDocument(dMapper.toEntity(naturalPersonD.getDocumentD()));
-    return naturalPerson;
+  public NaturalPerson create(NaturalPerson naturalPerson) throws AddressNotFoundException, DocumentNotFoundException {
+    NaturalPersonD naturalPersonD = util.naturalPersonDDWithAddressDAndDocumentD(mapper.toEntity(naturalPerson), naturalPerson);
+    return util.naturalPersonWithAddressAndDocument(mapper.toDto(repository.save(naturalPersonD)), naturalPersonD);
   }
 
+  /**
+   * Actualiza los datos de una persona natural previamente guardada.
+   *
+   * @param id            Identificador del elemento a editar.
+   * @param naturalPerson Elemento con los datos para guardar.
+   * @return persona natural actualizada.
+   * @throws NaturalPersonNotFoundException
+   * @throws AddressNotFoundException
+   * @throws DocumentNotFoundException
+   */
   @Override
-  public NaturalPerson update(Long id, NaturalPerson naturalPerson) {
+  public NaturalPerson update(Long id, NaturalPerson naturalPerson) throws NaturalPersonNotFoundException, AddressNotFoundException, DocumentNotFoundException {
     NaturalPersonD naturalPersonD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
+          .orElseThrow(() -> new NaturalPersonNotFoundException("Natural person not found."));
+    naturalPersonD = util.naturalPersonDDWithAddressDAndDocumentD(naturalPersonD, naturalPerson);
     naturalPersonD.setName(naturalPerson.getName());
     naturalPersonD.setLastName(naturalPerson.getLastName());
-    try {
-      naturalPersonD.setAddressD(aRepository.findByIdOptional(naturalPerson.getAddressId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-      naturalPersonD.setDocumentD(dRepository.findByIdOptional(naturalPerson.getDocumentId())
-            .filter(p -> (p.getDeletedAt() == null))
-            .orElseThrow(() -> new NotFoundException()));
-    } catch (Exception e) {
-      throw new NotFoundException("Not found");
-    }
-    naturalPerson = mapper.toEntity(repository.save(naturalPersonD));
-    naturalPerson.setAddress(aMapper.toEntity(naturalPersonD.getAddressD()));
-    naturalPerson.setDocument(dMapper.toEntity(naturalPersonD.getDocumentD()));
-    return naturalPerson;
+    return util.naturalPersonWithAddressAndDocument(mapper.toDto(repository.save(naturalPersonD)), naturalPersonD);
   }
 
+  /**
+   * Elimina (softdelete) una persona naturales de la BD.
+   *
+   * @param id Identificador del elemento a eliminar.
+   * @return persona natural eliminada.
+   * @throws NaturalPersonNotFoundException
+   */
   @Override
-  public NaturalPerson delete(Long id) {
+  public NaturalPerson delete(Long id) throws NaturalPersonNotFoundException {
     NaturalPersonD naturalPersonD = repository.findByIdOptional(id)
           .filter(p -> (p.getDeletedAt() == null))
-          .orElseThrow(() -> new NotFoundException());
-    NaturalPerson naturalPerson = mapper.toEntity(repository.softDelete(naturalPersonD));
-    naturalPerson.setAddress(aMapper.toEntity(naturalPersonD.getAddressD()));
-    naturalPerson.setDocument(dMapper.toEntity(naturalPersonD.getDocumentD()));
-    return naturalPerson;
+          .orElseThrow(() -> new NaturalPersonNotFoundException("Natural person not found"));
+    return util.naturalPersonWithAddressAndDocument(mapper.toDto(repository.softDelete(naturalPersonD)), naturalPersonD);
   }
 }

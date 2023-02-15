@@ -10,6 +10,11 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Entidad de BD para los estados/departamentos.
+ *
+ * @author pdiaz
+ */
 @Entity
 @Table(name = "state")
 @Data

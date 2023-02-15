@@ -1,9 +1,9 @@
 package com.quarkus.bootcamp.nttdata.infraestructure.repository.document;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentNotFoundException;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.document.DocumentD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.IRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotFoundException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -11,6 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio para los documentos.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class DocumentRepository implements IRepository<DocumentD> {
   /**
@@ -30,12 +35,13 @@ public class DocumentRepository implements IRepository<DocumentD> {
    *
    * @param id Identificador del elemento a devolver.
    * @return Elemento encontrado.
+   * @throws DocumentNotFoundException
    */
   @Override
-  public DocumentD getById(Long id) {
+  public DocumentD getById(Long id) throws DocumentNotFoundException {
     Optional<DocumentD> documentD = DocumentD.findByIdOptional(id);
     if (documentD.isEmpty()) {
-      throw new NotFoundException("City not found");
+      throw new DocumentNotFoundException("Document not found");
     }
     return documentD.get();
   }

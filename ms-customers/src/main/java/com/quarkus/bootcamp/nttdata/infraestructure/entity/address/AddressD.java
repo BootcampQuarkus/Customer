@@ -7,6 +7,11 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Entidad de BD para las direcciones de los clientes.
+ *
+ * @author pdiaz
+ */
 @Entity
 @Table(name = "address")
 @Data
@@ -31,9 +36,14 @@ public class AddressD extends PanacheEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "cityId")
   protected CityD cityD;
-
+  /**
+   * Relación OneToOne con Personas Naturales
+   */
   @OneToOne(mappedBy = "addressD", fetch = FetchType.LAZY)
   protected NaturalPersonD naturalPersonD;
+  /**
+   * Relación OneToOne con Persona Juridica
+   */
   @OneToOne(mappedBy = "addressD", fetch = FetchType.LAZY)
   protected BodyCorporateD bodyCorporateD;
   ///-----------------------------

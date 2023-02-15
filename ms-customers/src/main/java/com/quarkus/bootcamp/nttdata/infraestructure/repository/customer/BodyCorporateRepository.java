@@ -1,9 +1,9 @@
 package com.quarkus.bootcamp.nttdata.infraestructure.repository.customer;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.customer.BodyCorporateNotFoundException;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.customer.BodyCorporateD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.IRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotFoundException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -11,6 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio para las personas juridicas.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class BodyCorporateRepository implements IRepository<BodyCorporateD> {
   /**
@@ -30,12 +35,13 @@ public class BodyCorporateRepository implements IRepository<BodyCorporateD> {
    *
    * @param id Identificador del elemento a devolver.
    * @return Elemento encontrado.
+   * @throws BodyCorporateNotFoundException
    */
   @Override
-  public BodyCorporateD getById(Long id) {
+  public BodyCorporateD getById(Long id) throws BodyCorporateNotFoundException {
     Optional<BodyCorporateD> bodyCorporateD = BodyCorporateD.findByIdOptional(id);
     if (bodyCorporateD.isEmpty()) {
-      throw new NotFoundException("City not found");
+      throw new BodyCorporateNotFoundException("Body corporate not found");
     }
     return bodyCorporateD.get();
   }

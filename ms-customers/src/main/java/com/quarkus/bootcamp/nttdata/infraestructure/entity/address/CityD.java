@@ -7,6 +7,11 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Entidad de BD para las ciudades pertenecientes a un estado/departamento.
+ *
+ * @author pdiaz
+ */
 @Entity
 @Table(name = "city")
 @Data
