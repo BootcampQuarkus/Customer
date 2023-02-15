@@ -28,7 +28,7 @@ public interface IService<T, U> {
    * @param id Id del elemento en la BD.
    * @return De existir el elemento lo retorna, de lo contrario null .
    */
-  public U getById(Long id);
+  public U getById(Long id) throws Exception;
 
   /**
    * Crea un nuevo elemento en la BD
@@ -36,7 +36,7 @@ public interface IService<T, U> {
    * @param t El elemento a crear.
    * @return El elemento creado.
    */
-  public U create(T t);
+  public U create(T t) throws Exception;
 
   /**
    * Actualiza un elemento en la BD. Se busca por el Id.
@@ -45,7 +45,7 @@ public interface IService<T, U> {
    * @param t  Elemento con los datos para guardar.
    * @return Retorna el elemento editado/actualizado.
    */
-  public U update(Long id, T t);
+  public U update(Long id, T t) throws Exception;
 
   /**
    * Realiza la eliminación del elemento de manera logica (softDelete).
@@ -53,5 +53,5 @@ public interface IService<T, U> {
    * @param id Identificador del elemento a eliminar.
    * @return Retorna el elemento eliminado.
    */
-  public U delete(Long id);
+  public U delete(Long id) throws Exception;
 }

@@ -5,6 +5,11 @@ import com.quarkus.bootcamp.nttdata.domain.interfaces.IMapper;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.document.DocumentTypeD;
 import jakarta.enterprise.context.ApplicationScoped;
 
+/**
+ * Clase para transformaciones entre DocumentType y DocumentTypeD
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class DocumentTypeMapper implements IMapper<DocumentType, DocumentTypeD> {
   /**
@@ -15,7 +20,7 @@ public class DocumentTypeMapper implements IMapper<DocumentType, DocumentTypeD> 
    * @throws NullPointerException
    */
   @Override
-  public DocumentTypeD toDto(DocumentType documentType) throws NullPointerException {
+  public DocumentTypeD toEntity(DocumentType documentType) throws NullPointerException {
     DocumentTypeD documentTypeD = new DocumentTypeD();
     documentTypeD.setDescription(documentType.getDescription());
     return documentTypeD;
@@ -29,7 +34,7 @@ public class DocumentTypeMapper implements IMapper<DocumentType, DocumentTypeD> 
    * @throws NullPointerException
    */
   @Override
-  public DocumentType toEntity(DocumentTypeD documentTypeD) throws NullPointerException {
+  public DocumentType toDto(DocumentTypeD documentTypeD) throws NullPointerException {
     DocumentType documentType = new DocumentType();
     documentType.setId(documentTypeD.id);
     documentType.setDescription(documentTypeD.getDescription());

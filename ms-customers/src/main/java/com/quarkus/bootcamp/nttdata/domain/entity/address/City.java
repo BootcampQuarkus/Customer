@@ -5,6 +5,11 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Entidad de logica de negocio para las ciudades.
+ *
+ * @author pdiaz
+ */
 @Data
 @NoArgsConstructor
 public class City {
@@ -14,15 +19,15 @@ public class City {
    */
   protected String name;
   /**
-   * Collección de estados.
+   * Estado al que pertenece la ciudad.
    */
   protected State states;
   /**
-   *
+   * Identificador del estado al que pertenece la ciudad.
    */
   protected Long stateId;
   /**
-   *
+   * Colección de direcciones
    */
   protected List<Address> addresses;
 }

@@ -10,6 +10,11 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Entidad de BD para los tipos de documentos.
+ *
+ * @author pdiaz
+ */
 @Entity
 @Table(name = "documentType")
 @Data
@@ -22,8 +27,7 @@ public class DocumentTypeD extends PanacheEntity {
   protected String description;
   ///-----------------------------
   /**
-   * Collección de ciudades dentro de dicho estado.
-   * El campo para hacer el mapping es stateD.
+   * Colleccion de documentos que son del tipo.
    */
   @OneToMany(mappedBy = "documentTypeD", orphanRemoval = true)
   protected List<DocumentD> documentDs;

@@ -1,9 +1,9 @@
 package com.quarkus.bootcamp.nttdata.infraestructure.repository.address;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.AddressNotFoundException;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.AddressD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.IRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotFoundException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -11,6 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio para las direcciones de los clientes.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class AddressRepository implements IRepository<AddressD> {
   /**
@@ -30,12 +35,13 @@ public class AddressRepository implements IRepository<AddressD> {
    *
    * @param id Identificador del elemento a devolver.
    * @return Elemento encontrado.
+   * @throws AddressNotFoundException
    */
   @Override
-  public AddressD getById(Long id) {
+  public AddressD getById(Long id) throws AddressNotFoundException {
     Optional<AddressD> addressD = AddressD.findByIdOptional(id);
     if (addressD.isEmpty()) {
-      throw new NotFoundException("Account not found");
+      throw new AddressNotFoundException("Address not found");
     }
     return addressD.get();
   }

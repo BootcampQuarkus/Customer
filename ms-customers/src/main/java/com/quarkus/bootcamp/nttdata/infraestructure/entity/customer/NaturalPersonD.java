@@ -8,20 +8,33 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * https://files.consumerfinance.gov/f/201510_cfpb_spanish-style-guide-glossary.pdf
+ * Entidad de BD para las personas naturales.
+ * Terminologia -> https://files.consumerfinance.gov/f/201510_cfpb_spanish-style-guide-glossary.pdf
  */
 @Entity
 @Table(name = "naturalperson")
 @Data
 @NoArgsConstructor
 public class NaturalPersonD extends PanacheEntity {
+  /**
+   * Nombre de la persona natural.
+   */
   protected String name;
+  /**
+   * Apellido de la persona natural.
+   */
   protected String lastName;
   ///-----------------------------
+  /**
+   * Documento de la persona natural.
+   * DNI, Carnet de extranjeria, etc
+   */
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "documentId")
   protected DocumentD documentD;
-
+  /**
+   * Dirección de la persona natural.
+   */
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "addressId")
   protected AddressD addressD;

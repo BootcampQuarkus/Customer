@@ -1,5 +1,6 @@
 package com.quarkus.bootcamp.nttdata.application.document;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.document.DocumentTypeNotFoundException;
 import com.quarkus.bootcamp.nttdata.domain.entity.document.DocumentType;
 import com.quarkus.bootcamp.nttdata.domain.services.document.DocumentTypeService;
 import jakarta.inject.Inject;
@@ -23,7 +24,11 @@ public class DocumentTypeResource {
   @GET
   @Path("/{id}")
   public Response getById(@PathParam("id") Long id) {
-    return Response.ok(service.getById(id)).build();
+    try {
+      return Response.ok(service.getById(id)).build();
+    } catch (DocumentTypeNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @POST
@@ -36,13 +41,21 @@ public class DocumentTypeResource {
   @Path("{id}")
   @Transactional
   public Response update(@PathParam("id") Long id, DocumentType documentType) {
-    return Response.ok(service.update(id, documentType)).status(201).build();
+    try {
+      return Response.ok(service.update(id, documentType)).status(201).build();
+    } catch (DocumentTypeNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 
   @DELETE
   @Path("{id}")
   @Transactional
   public Response delete(@PathParam("id") Long id) {
-    return Response.ok(service.delete(id)).build();
+    try {
+      return Response.ok(service.delete(id)).build();
+    } catch (DocumentTypeNotFoundException e) {
+      return Response.ok(e.getMessage()).status(404).build();
+    }
   }
 }

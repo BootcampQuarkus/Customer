@@ -1,9 +1,9 @@
 package com.quarkus.bootcamp.nttdata.infraestructure.repository.address;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.CityNotFoundException;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.CityD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.IRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotFoundException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -11,6 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio para las direcciones de los clientes.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class CityRepository implements IRepository<CityD> {
   /**
@@ -30,12 +35,13 @@ public class CityRepository implements IRepository<CityD> {
    *
    * @param id Identificador del elemento a devolver.
    * @return Elemento encontrado.
+   * @throws CityNotFoundException
    */
   @Override
-  public CityD getById(Long id) {
+  public CityD getById(Long id) throws CityNotFoundException {
     Optional<CityD> cityD = CityD.findByIdOptional(id);
     if (cityD.isEmpty()) {
-      throw new NotFoundException("City not found");
+      throw new CityNotFoundException("City not found");
     }
     return cityD.get();
   }

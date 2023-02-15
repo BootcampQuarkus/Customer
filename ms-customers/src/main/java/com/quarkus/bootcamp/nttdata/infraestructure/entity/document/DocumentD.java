@@ -7,6 +7,11 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Entidad de BD para las documentos de los clientes.
+ *
+ * @author pdiaz
+ */
 @Entity
 @Table(name = "document")
 @Data
@@ -22,8 +27,14 @@ public class DocumentD extends PanacheEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "documentTypeId")
   protected DocumentTypeD documentTypeD;
+  /**
+   * Relación OneToOne con Personas Naturales
+   */
   @OneToOne(mappedBy = "documentD", fetch = FetchType.LAZY)
   protected NaturalPersonD naturalPersonD;
+  /**
+   * Relación OneToOne con Persona Juridica
+   */
   @OneToOne(mappedBy = "documentD", fetch = FetchType.LAZY)
   protected BodyCorporateD bodyCorporateD;
   ///-----------------------------

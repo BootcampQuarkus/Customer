@@ -1,9 +1,9 @@
 package com.quarkus.bootcamp.nttdata.infraestructure.repository.address;
 
+import com.quarkus.bootcamp.nttdata.domain.Exceptions.address.StateNotFoundException;
 import com.quarkus.bootcamp.nttdata.infraestructure.entity.address.StateD;
 import com.quarkus.bootcamp.nttdata.infraestructure.repository.IRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.NotFoundException;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -11,6 +11,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio para los estados/departamentos de los clientes.
+ *
+ * @author pdiaz
+ */
 @ApplicationScoped
 public class StateRepository implements IRepository<StateD> {
   /**
@@ -30,12 +35,13 @@ public class StateRepository implements IRepository<StateD> {
    *
    * @param id Identificador del elemento a devolver.
    * @return Elemento encontrado.
+   * @throws StateNotFoundException
    */
   @Override
-  public StateD getById(Long id) {
+  public StateD getById(Long id) throws StateNotFoundException {
     Optional<StateD> cardD = StateD.findByIdOptional(id);
     if (cardD.isEmpty()) {
-      throw new NotFoundException("Account not found");
+      throw new StateNotFoundException("State not found");
     }
     return cardD.get();
   }
