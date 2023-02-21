@@ -18,7 +18,7 @@ jobs:
       - name: Build with Maven
         run: mvn clean
       - name: Execute package
-        run: mvn package -X
+        run: mvnw package
       - name: Publish to Docker Hub
         uses: docker/build-push-action@v1
         with:
