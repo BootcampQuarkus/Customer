@@ -17,8 +17,8 @@ jobs:
           java-version: 1.11
       - name: Build with Maven
         run: mvn clean
-      - name: Execute .mvnw
-        run: ./mvnw package
+      - name: Execute package
+        run: mvn package
       - name: Publish to Docker Hub
         uses: docker/build-push-action@v1
         with:
