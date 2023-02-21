@@ -16,9 +16,9 @@ jobs:
         with:
           java-version: 17
       - name: Build with Maven
-        run: mvn clean
+        run: mvn clean install
       - name: Execute package
-        run: mvnw package
+        run: mvn package
       - name: Publish to Docker Hub
         uses: docker/build-push-action@v1
         with:
