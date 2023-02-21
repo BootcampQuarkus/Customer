@@ -14,15 +14,21 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v1
         with:
-          java-version: 17
+          java-version: '17'
       - name: Build with Maven
         run: mvn clean install
       - name: Execute package
         run: mvn package
-      - name: Publish to Docker Hub
-        uses: docker/build-push-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PASSWORD }}
-          repository: pedrodiaz/ms-customer
-          tags: ${{github.run_number}}
+      - name: Publish to Docker Hub
+        uses: docker/build-push-action@v4.0.0
+        with:
+          file: "{{context}}/src/main/docker/Dockerfile.jvm"
+          push: true
+          tags: pedrodiaz/bq-ms-customer:${{github.run_number}}
